@@ -25,7 +25,6 @@ export const verifySlackRequest = (req: NextApiRequest, rawBody: Buffer): boolea
         return false;
     }
 
-    // Prevent replay attacks by checking if the request is older than 5 minutes
     const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 60 * 5;
     if (parseInt(timestamp, 10) < fiveMinutesAgo) {
         console.error('Slack request is too old.');
@@ -33,9 +32,11 @@ export const verifySlackRequest = (req: NextApiRequest, rawBody: Buffer): boolea
     }
 
     const baseString = `v0:${timestamp}:${rawBody.toString()}`;
-    const hmac = crypto.createHmac('sha265', signingSecret);
+    // CORRECTED ALGORITHM TO sha256
+    const hmac = crypto.createHmac('sha256', signingSecret);
     hmac.update(baseString);
     const computedSignature = `v0=${hmac.digest('hex')}`;
 
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature));
+    // ADDED Buffer CASTS TO FIX THE TYPE ERROR
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature) as Buffer);
 };
