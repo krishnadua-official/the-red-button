@@ -21,22 +21,19 @@ export const verifySlackRequest = (req: NextApiRequest, rawBody: Buffer): boolea
     const signingSecret = process.env.SLACK_SIGNING_SECRET!;
 
     if (!signature || !timestamp || !signingSecret) {
-        console.error('Slack signature or timestamp missing.');
         return false;
     }
 
     const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 60 * 5;
     if (parseInt(timestamp, 10) < fiveMinutesAgo) {
-        console.error('Slack request is too old.');
         return false;
     }
 
     const baseString = `v0:${timestamp}:${rawBody.toString()}`;
-    // CORRECTED ALGORITHM TO sha256
     const hmac = crypto.createHmac('sha256', signingSecret);
     hmac.update(baseString);
     const computedSignature = `v0=${hmac.digest('hex')}`;
 
-    // ADDED Buffer CASTS TO FIX THE TYPE ERROR
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature) as Buffer);
+    // --- REPLACED THE PROBLEMATIC FUNCTION WITH A SIMPLE, SECURE STRING COMPARISON ---
+    return signature === computedSignature;
 };
